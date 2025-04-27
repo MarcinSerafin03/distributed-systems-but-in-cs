@@ -1,0 +1,138 @@
+syntax = "proto3";
+
+option csharp_namespace = "SmartHome.Services";
+
+package smartHome;
+
+service SmartHomeService {
+  rpc ListDevices(ListDevicesRequest) returns (ListDevicesResponse);
+
+  rpc GetDeviceInfo(DeviceInfoRequest) returns (DeviceInfoResponse);
+
+  rpc ControlDevice(ControlRequest) returns (ControlResponse);
+
+  rpc MonitorDevice(MonitorRequest) returns (stream DeviceStatus);
+}
+
+message ListDevicesRequest {
+  string userId = 1;
+}
+
+message ListDevicesResponse {
+  repeated Device devices = 1;
+}
+
+message Device {
+  string id = 1;
+  string name = 2;
+  DeviceType type = 3;
+  string subType = 4;
+  bool online = 5;
+}
+
+enum DeviceType {
+  UNKNOWN = 0;
+  SECURITY_CAMERA = 1;
+  THERMOSTAT = 2;
+  REFRIGERATOR = 3;
+}
+
+message DeviceInfoRequest {
+  string deviceId = 1;
+}
+
+message DeviceInfoResponse {
+  Device device = 1;
+  oneof deviceSpecifiedInfo {
+    SecurityCameraInfo securityCameraInfo = 2;
+    ThermostatInfo thermostatInfo = 3;
+    RefrigeratorInfo refrigeratorInfo = 4;
+  }
+}
+
+message SecurityCameraInfo {
+  string location = 1;
+  bool recording = 2;
+  Position position = 3;
+  int32 batteryLevel = 4;
+}
+
+message Position {
+  float pan = 1;
+  float tilt = 2;
+  float zoom = 3;
+}
+
+message ThermostatInfo {
+  string temperatureUnit = 1;
+  float currentTemperature = 2;
+  float targetTemperature = 3;
+  string location = 4;
+  int32 batteryLevel = 5;
+}
+
+message RefrigeratorInfo {
+  enum Mode {
+    NORMAL = 0;
+    ECO = 1;
+    QUICK = 2;
+  }
+  Mode mode = 1;
+  float currentTemperature = 2;
+  bool doorOpen = 3;
+  repeated Compartment compartments = 4;
+}
+
+message Compartment {
+  string name = 1;
+  float currentTemperature = 2;
+  float targetTemperature = 3;
+}
+
+message ControlRequest {
+  string deviceId = 1;
+  oneof controlCommand {
+    SetPosition setPosition = 2;
+    SetRecording setRecording = 3;
+    SetTemperature setTemperature = 4;
+    SetMode setMode = 5;
+  }
+}
+
+message SetPosition {
+  Position position = 1;
+}
+
+message SetRecording {
+  bool recording = 1;
+}
+
+message SetTemperature {
+  float temperature = 1;
+}
+
+message SetMode {
+  RefrigeratorInfo.Mode mode = 1;
+}
+
+message ControlResponse {
+  string deviceId = 1;
+  bool success = 2;
+  string message = 3;
+}
+
+message MonitorRequest {
+  string deviceId = 1;
+  int32 interval = 2; // in seconds
+}
+
+message DeviceStatus {
+  string deviceId = 1;
+  DeviceType deviceType = 2;
+  bool isOnline = 3;
+  oneof statusInfo {
+    SecurityCameraInfo securityCameraInfo = 4;
+    ThermostatInfo thermostatInfo = 5;
+    RefrigeratorInfo refrigeratorInfo = 6;
+  }
+}
