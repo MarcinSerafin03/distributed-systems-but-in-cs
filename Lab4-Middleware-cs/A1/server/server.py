@@ -154,6 +154,8 @@ class SmartHomeServicer(smart_home_pb2_grpc.SmartHomeServiceServicer):
 
     def GetDeviceInfo(self, request, context):
         """Returns detailed information about a specific device"""
+        print(request)
+        print(context)
         device_id = request.deviceId
         logging.info(f"Server {self.server_id}: GetDeviceInfo called for device: {device_id}")
         
@@ -395,6 +397,7 @@ def serve(server_id):
         port = 50052
     
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    print(f"Starting server {server_id} on port {port}")
     smart_home_pb2_grpc.add_SmartHomeServiceServicer_to_server(
         SmartHomeServicer(devices, server_id), server)
     server.add_insecure_port(f'[::]:{port}')
