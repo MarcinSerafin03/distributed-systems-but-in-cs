@@ -1,0 +1,48 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+skinparam ArrowColor Black
+
+actor Team
+actor Supplier
+actor Administrator
+
+package "Exchanges" {
+    node "orders" <<Direct>> as E_orders
+    node "confirmations" <<Direct>> as E_confirmations
+    node "admin" <<Topic>> as E_admin
+    node "monitoring" <<Fanout>> as E_monitoring
+}
+
+package "Queues" {
+    node "confirmations_<team>" as Q_team_confirm
+    node "admin_team_<team>" as Q_team_admin
+    node "orders_<type>_<supplier>" as Q_supplier_order
+    node "admin_supplier_<supplier>" as Q_supplier_admin
+    node "monitoring_admin" as Q_admin_monitoring
+}
+
+'== Order Flow ==
+Team --> E_orders : publish order\nroutingKey = <equipmentType>
+E_orders --> Q_supplier_order : bind routingKey = <equipmentType>
+Q_supplier_order --> Supplier : receives order
+
+'== Confirmation Flow ==
+Supplier --> E_confirmations : publish confirmation\nroutingKey = <teamName>
+E_confirmations --> Q_team_confirm : bind routingKey = <teamName>
+Q_team_confirm --> Team : receives confirmation
+
+'== Admin Messages ==
+Administrator --> E_admin : publish message\nroutingKey = teams/suppliers/all
+E_admin --> Q_team_admin : bind routingKey = "teams"\n"all"
+E_admin --> Q_supplier_admin : bind routingKey = "suppliers"\n"all"
+Q_team_admin --> Team : receives admin msg
+Q_supplier_admin --> Supplier : receives admin msg
+
+'== Monitoring ==
+Team --> E_monitoring : publish copy of order
+Supplier --> E_monitoring : publish copy of confirmation
+E_monitoring --> Q_admin_monitoring : fanout to admin
+Q_admin_monitoring --> Administrator : receives all activity
+
+@enduml
